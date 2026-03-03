@@ -47,16 +47,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 // Routes
-app.use('/api/auth',       rateLimit(15,  60000), require('./routes/auth'));
+app.use('/api/auth',       rateLimit(25,  60000), require('./routes/auth'));
 app.use('/api/products',   rateLimit(600, 60000), require('./routes/products'));
 app.use('/api/categories', rateLimit(300, 60000), require('./routes/categories'));
 app.use('/api/orders',     rateLimit(150, 60000), require('./routes/orders'));
 app.use('/api/settings',   rateLimit(300, 60000), require('./routes/settings'));
-app.use('/api/contact',    rateLimit(10,  60000), require('./routes/contact'));
+app.use('/api/contact',    rateLimit(30,  60000), require('./routes/contact'));
 app.use('/api/reviews',    rateLimit(200, 60000), require('./routes/reviews'));
 app.use('/api/blog',       rateLimit(400, 60000), require('./routes/blog'));
 app.use('/api/visitors',   rateLimit(600, 60000), require('./routes/visitors'));
-app.use('/api/report',     rateLimit(30,  60000), require('./routes/report'));
+app.use('/api/report',     rateLimit(50,  60000), require('./routes/report'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), service: 'RoboMarket API v10' }));
 
