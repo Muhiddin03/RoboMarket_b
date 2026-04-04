@@ -12,7 +12,7 @@ const slugify = (t) =>
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
-    const { category, search, sort = 'id', order = 'desc', page = 1, limit = 40, badge } = req.query;
+    const { category, search, sort = 'id', order = 'desc', page = 1, limit = 600, badge } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const conds = ['p.is_active = TRUE'];
     const params = [];
