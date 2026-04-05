@@ -19,14 +19,15 @@ router.get('/', async (req, res) => {
     let i = 1;
 
     if (category) { conds.push(`c.slug = $${i++}`); params.push(category); }
-    if (search) {
-  const words = search.trim().split(/\s+/).filter(Boolean);
-  const wordConds = words.map(w => {
+   if (search) {
+  const words = search.trim().split(/[\s\-_]+/).filter(w => w.length > 0);
+  const wordConds = [];
+  for (const w of words) {
     params.push(`%${w}%`);
-    const idx = i++;
-    return `(p.name ILIKE $${idx} OR p.description ILIKE $${idx})`;
-  });
-  conds.push(`(${wordConds.join(' OR ')})`);
+    wordConds.push(`(p.name ILIKE $${i} OR p.description ILIKE $${i})`);
+    i++;
+  }
+  if (wordConds.length) conds.push(`(${wordConds.join(' OR ')})`);
 }
     if (badge)    { conds.push(`p.badge = $${i++}`); params.push(badge); }
 
