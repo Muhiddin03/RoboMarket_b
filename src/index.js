@@ -57,6 +57,7 @@ app.use('/api/reviews',    rateLimit(200, 60000), require('./routes/reviews'));
 app.use('/api/blog',       rateLimit(400, 60000), require('./routes/blog'));
 app.use('/api/visitors',   rateLimit(600, 60000), require('./routes/visitors'));
 app.use('/api/report',     rateLimit(50,  60000), require('./routes/report'));
+app.use('/api/customer-orders', rateLimit(30, 60000), require('./routes/customer_orders'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), service: 'RoboMarket API v10' }));
 
