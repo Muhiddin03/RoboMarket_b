@@ -19,7 +19,15 @@ router.get('/', async (req, res) => {
     let i = 1;
 
     if (category) { conds.push(`c.slug = $${i++}`); params.push(category); }
-    if (search)   { conds.push(`(p.name ILIKE $${i} OR p.description ILIKE $${i++})`); params.push(`%${search}%`); }
+    if (search) {
+  const words = search.trim().split(/\s+/).filter(Boolean);
+  const wordConds = words.map(w => {
+    params.push(`%${w}%`);
+    const idx = i++;
+    return `(p.name ILIKE $${idx} OR p.description ILIKE $${idx})`;
+  });
+  conds.push(`(${wordConds.join(' OR ')})`);
+}
     if (badge)    { conds.push(`p.badge = $${i++}`); params.push(badge); }
 
     const cols = { id: 'p.id', price: 'p.price', name: 'p.name', stock: 'p.stock', created_at: 'p.created_at' };
