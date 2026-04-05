@@ -19,14 +19,9 @@ router.get('/', async (req, res) => {
     let i = 1;
 
     if (category) { conds.push(`c.slug = $${i++}`); params.push(category); }
-    if (search && search.trim()) {
-  const words = search.trim().split(/\s+/).filter(w => w.length > 0);
-  const wordConds = words.map(w => {
-    const idx = i++;
-    params.push(`%${w}%`);
-    return `(p.name ILIKE $${idx} OR p.description ILIKE $${idx} OR p.specs::text ILIKE $${idx})`;
-  });
-  conds.push(`(${wordConds.join(' OR ')})`);
+   if (search && search.trim()) {
+  params.push(`%${search.trim()}%`);
+  conds.push(`p.name ILIKE $${i++}`);
 }
     if (badge)    { conds.push(`p.badge = $${i++}`); params.push(badge); }
 
