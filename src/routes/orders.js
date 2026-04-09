@@ -187,13 +187,20 @@ router.get('/:id', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PATCH /api/orders/:id/status (admin)
-router.patch('/:id/status', authMiddleware, async (req, res) => {
+// // PATCH /api/orders/:id/status (admin)
+// router.patch('/:id/status', authMiddleware, async (req, res) => {
+ // PATCH /api/orders/:id/note (admin javob yozish)
+router.patch('/:id/note', authMiddleware, async (req, res) => {
   try {
-    const { status } = req.body;
-    const allowed = ['new','processing','shipped','delivered','cancelled'];
-    if (!allowed.includes(status)) return res.status(400).json({ error: "Noto'g'ri holat" });
-    const o = await get('UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *', [status, req.params.id]);
+    const { admin_note, out_of_stock_items } = req.body;
+    const o = await get(
+      `UPDATE orders SET
+        admin_note = COALESCE($1, admin_note),
+        out_of_stock_items = COALESCE($2, out_of_stock_items),
+        updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
+      [admin_note ?? null, out_of_stock_items ? JSON.stringify(out_of_stock_items) : null, req.params.id]
+    );
     res.json(o);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

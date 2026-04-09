@@ -134,13 +134,15 @@ const initDB = async () => {
     )
   `);
 
+
   // Indekslar (tezlik uchun)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id, is_approved)`).catch(() => {});
-
+await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_note TEXT`).catch(() => {});
+await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS out_of_stock_items JSONB DEFAULT '[]'`).catch(() => {});
   // Default kategoriyalar (faqat birinchi marta)
   const { rows } = await pool.query('SELECT COUNT(*) as c FROM categories');
   if (parseInt(rows[0].c) === 0) {
