@@ -9,7 +9,6 @@ const genNum = () => {
 
 const fmt = (n) => Number(n || 0).toLocaleString('uz-UZ');
 
-// Telegram xabar yuborish (ishonchli)
 const sendTelegram = async (token, chatId, text) => {
   if (!token || !chatId) return;
   try {
@@ -38,7 +37,6 @@ router.post('/', async (req, res) => {
     if (!items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "Savat bo'sh" });
 
-    // Mahsulotlarni tekshirish
     const ids = items.map(i => i.product_id);
     const dbProds = await all(
       `SELECT id, price, old_price, stock, name FROM products WHERE id = ANY($1) AND is_active = TRUE`,
@@ -79,12 +77,10 @@ router.post('/', async (req, res) => {
        actualSubtotal, discount_amount, delivery_cost, total]
     );
 
-    // Stokni kamaytirish
     for (const item of verifiedItems) {
       await run('UPDATE products SET stock = stock - $1 WHERE id = $2', [item.qty, item.product_id]);
     }
 
-    // Telegram xabar (asinxron — javobni kutmaymiz)
     const botRow  = await get("SELECT value FROM settings WHERE key = 'telegram_bot_token'");
     const chatRow = await get("SELECT value FROM settings WHERE key = 'telegram_chat_id'");
     if (botRow?.value && chatRow?.value) {
@@ -106,7 +102,7 @@ router.post('/', async (req, res) => {
         delivery_cost > 0 ? `🚚 Yetkazish: <b>${fmt(delivery_cost)} so'm</b>` : null,
         `💰 <b>JAMI: ${fmt(total)} so'm</b>`,
       ].filter(Boolean).join('\n');
-      sendTelegram(botRow.value, chatRow.value, msg); // asinxron
+      sendTelegram(botRow.value, chatRow.value, msg);
     }
 
     res.status(201).json({ order, message: 'Zakaz qabul qilindi!' });
@@ -119,7 +115,7 @@ router.post('/', async (req, res) => {
 // GET /api/orders (admin)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { status, page = 1, limit = 50 } = req.query;
+    const { status, page = 1, limit = 200 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let q = 'SELECT * FROM orders', params = [];
     if (status) { q += ' WHERE status = $1'; params.push(status); }
@@ -151,8 +147,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
         COUNT(*) FILTER (WHERE stock>0 AND stock<=5)   AS low_stock
       FROM products WHERE is_active=TRUE
     `);
-
-    // Foyda hisoblash
     const profitRows = await all(`SELECT items FROM orders WHERE status='delivered'`);
     let totalProfit = 0;
     for (const row of profitRows) {
@@ -187,19 +181,31 @@ router.get('/:id', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// // PATCH /api/orders/:id/status (admin)
-// router.patch('/:id/status', authMiddleware, async (req, res) => {
- // PATCH /api/orders/:id/note (admin javob yozish)
+// PATCH /api/orders/:id/status (admin)
+router.patch('/:id/status', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['new','processing','shipped','delivered','cancelled'];
+    if (!allowed.includes(status)) return res.status(400).json({ error: "Noto'g'ri holat" });
+    const o = await get(
+      'UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *',
+      [status, req.params.id]
+    );
+    res.json(o);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/orders/:id/note (admin javob + tugagan mahsulotlar)
 router.patch('/:id/note', authMiddleware, async (req, res) => {
   try {
     const { admin_note, out_of_stock_items } = req.body;
     const o = await get(
       `UPDATE orders SET
-        admin_note = COALESCE($1, admin_note),
-        out_of_stock_items = COALESCE($2, out_of_stock_items),
+        admin_note = $1,
+        out_of_stock_items = $2,
         updated_at = NOW()
        WHERE id = $3 RETURNING *`,
-      [admin_note ?? null, out_of_stock_items ? JSON.stringify(out_of_stock_items) : null, req.params.id]
+      [admin_note || null, JSON.stringify(out_of_stock_items || []), req.params.id]
     );
     res.json(o);
   } catch (e) { res.status(500).json({ error: e.message }); }
